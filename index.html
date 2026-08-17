@@ -265,6 +265,48 @@ td:hover .fx-btn{opacity:1}
 .filtermenu .fm-actions{display:flex;gap:8px;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
 .filtermenu .fm-actions button{flex:1;font-size:11px;padding:5px;border:1px solid var(--line-2);background:var(--surface);border-radius:6px;cursor:pointer}
 .filter-active{background:var(--accent-soft)!important;color:var(--accent-ink);border-color:var(--accent)!important}
+/* v4: cloud sync + mobile responsive */
+.cloud-ind{display:flex;align-items:center;gap:6px;font-size:11px;color:#8598b0;cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid #3a4a60}
+.cloud-ind:hover{border-color:#5a7093;color:#fff}
+.cloud-ind .cdot{width:8px;height:8px;border-radius:50%;background:#7a8aa0;flex:none}
+.cloud-ind.on .cdot{background:var(--ok)}
+.cloud-ind.syncing .cdot{background:#e2b53c;animation:pulse 1s infinite}
+.cloud-ind.err .cdot{background:var(--danger)}
+@keyframes pulse{50%{opacity:.35}}
+.cloudpanel .fld{margin-bottom:12px}
+.cloudpanel .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.cloudpanel code{background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:11.5px}
+.steps-ol{margin:0;padding-left:20px;line-height:1.9;font-size:12.5px}
+.steps-ol code{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+.cloudstat{font-size:12px;color:var(--muted);margin-top:10px}
+/* MOBILE */
+@media(max-width:760px){
+ .wrap,.navbar,nav.tabs{padding-left:12px;padding-right:12px}
+ h1{font-size:17px}
+ .navbar{padding-top:10px;gap:8px}
+ .head-actions{width:100%;margin-top:8px;gap:6px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+ .head-actions .btn{flex:none}
+ nav.tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+ .tab{white-space:nowrap;padding:11px 12px}
+ .card{padding:12px;border-radius:10px}
+ .card.wide{padding:10px}
+ .toolbar{gap:7px}
+ .toolbar input[type=text]{min-width:0;flex:1}
+ .mpills{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+ .mpill{min-width:120px}
+ .tblscroll{max-height:none}
+ table.grid th,table.grid td{padding:9px 8px}   /* bigger tap targets */
+ .grid td input,.grid td select{padding:7px 6px;font-size:13px}
+ .drawer{width:100%;max-width:none}
+ .dgrid,.dgrid.two{grid-template-columns:1fr}
+ .modal{max-width:none;border-radius:12px}
+ .fgrid,.prodrow{grid-template-columns:1fr 1fr}
+ .matrix{font-size:11px}
+ .selbar{flex-wrap:wrap;gap:8px}
+ .fxpop{width:calc(100vw - 24px);left:12px!important}
+ .act-btn{padding:6px 5px;font-size:16px}   /* easier to tap */
+}
+@media(max-width:760px) and (display-mode:standalone){body{padding-bottom:80px}}
 </style></head><body>
 <header class="top">
  <div class="navbar">
@@ -272,6 +314,7 @@ td:hover .fx-btn{opacity:1}
   <div><h1>Invoicing &amp; Milestone Tracker</h1><div class="sub">Manufacturing &mdash; Mechanical Products</div></div>
   <div class="head-actions">
    <span class="saved" id="saved"><span class="dot"></span><span id="savedTxt">Saved</span></span>
+   <span class="cloud-ind" id="cloudInd" title="Cloud sync"><span class="cdot"></span><span id="cloudTxt">Cloud off</span></span>
    <button class="btn ghost sm" id="undoBtn" title="Undo (Ctrl+Z)">&#8630; Undo</button>
    <button class="btn ghost sm" id="importXlsBtn">Import Excel</button>
    <button class="btn ghost sm" id="importBtn">Import JSON</button>
@@ -387,6 +430,27 @@ td:hover .fx-btn{opacity:1}
 <div class="confirm-bg" id="confirmBg"><div class="confirm"><p id="confirmMsg"></p><div class="cf"><button class="btn light" id="confirmNo">No</button><button class="btn" id="confirmYes">Yes, move</button></div></div></div>
 <div class="drawer-bg" id="drawerBg"></div>
 <div class="drawer" id="drawer"><div class="drawer-h"><span class="dt" id="drawerTitle"></span><span class="dstatus" id="drawerStatus"></span></div><div class="drawer-b" id="drawerBody"></div><div class="drawer-f"><button class="btn light danger" id="drawerDelete">Delete job</button><button class="btn" id="drawerClose">Close</button></div></div>
+<div class="modal-bg" id="cloudBg"><div class="modal"><div class="modal-h">Cloud sync</div>
+ <div class="modal-b cloudpanel">
+  <div class="cloudstat" id="cloudState" style="margin-top:0;margin-bottom:12px"></div>
+  <div class="fld"><label>Supabase Project URL</label><input id="cloudUrl" placeholder="https://xxxx.supabase.co"></div>
+  <div class="fld"><label>Supabase anon public key</label><input id="cloudKey" placeholder="eyJhbGciOi…"></div>
+  <div class="fld"><label>Encryption passphrase (optional but recommended)</label><input id="cloudPass" type="password" placeholder="A secret only you know"><div class="hint">If set, your data is encrypted in this browser before it&rsquo;s sent to the cloud. Use the <b>same passphrase</b> on every device. Lose it and the cloud copy can&rsquo;t be read.</div></div>
+  <div class="row"><button class="btn" id="cloudConnect">Connect &amp; sync</button><button class="btn light" id="cloudPull">Pull latest</button><button class="btn light" id="cloudPush">Push now</button><button class="btn light danger" id="cloudOff">Disconnect</button></div>
+  <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px">
+   <h3 style="font-size:14px;margin:0 0 8px">One-time setup (~10 min, free)</h3>
+   <ol class="steps-ol">
+    <li>Host the file: go to <code>app.netlify.com/drop</code> and drag this HTML in &mdash; you get a live URL. (Or GitHub Pages / Cloudflare Pages.)</li>
+    <li>Create a free project at <code>supabase.com</code>.</li>
+    <li>In the project: <b>Table editor &rarr; New table</b> named <code>tracker</code> with columns <code>id</code> (int8, primary key), <code>data</code> (jsonb), <code>updated_at</code> (timestamptz). Uncheck &ldquo;Enable Row Level Security&rdquo; for a personal single-user table.</li>
+    <li><b>Table editor &rarr; Insert row</b>: set <code>id</code> = <code>1</code>, leave the rest blank, save.</li>
+    <li><b>Project Settings &rarr; API</b>: copy the <b>Project URL</b> and the <b>anon public</b> key into the boxes above, set a passphrase, and hit <b>Connect &amp; sync</b>.</li>
+    <li>Open your Netlify URL on your phone and paste the same URL/key/passphrase &mdash; both devices now share one live copy. Add it to your home screen for an app-like shortcut.</li>
+   </ol>
+  </div>
+ </div>
+ <div class="modal-f"><button class="btn light" id="cloudClose">Close</button></div>
+</div></div>
 <div class="fxpop" id="fxPop"></div>
 <div class="lightbox" id="lightbox"><button class="lbclose" id="lbClose">&times;</button><img id="lbImg" src=""></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAction" style="display:none"></button></div>
@@ -501,7 +565,7 @@ function abbrHTML(){return PRODUCTS.map(([k,full])=>{const c=COLS.find(x=>x.f===
 // persistence
 let saveTimer=null,dirty=false;
 function markDirty(){dirty=true;$('saved').classList.add('dirty');$('savedTxt').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(save,350);}
-function save(){try{localStorage.setItem(LSKEY,JSON.stringify(S));dirty=false;$('saved').classList.remove('dirty');$('savedTxt').textContent='Saved';}catch(e){$('savedTxt').textContent='Storage full — export JSON';toast('Browser storage is full. Export JSON to back up.');}}
+function save(){try{localStorage.setItem(LSKEY,JSON.stringify(S));dirty=false;$('saved').classList.remove('dirty');$('savedTxt').textContent='Saved';schedulePush();}catch(e){$('savedTxt').textContent='Storage full — export JSON';toast('Browser storage is full. Export JSON to back up.');}}
 
 // undo
 const undoStack=[];
@@ -873,8 +937,34 @@ $('jsonBtn').onclick=()=>{download('cst-tracker-backup.json',JSON.stringify(S,nu
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d.jobs||!d.vocab)throw 0;const ui=S.ui;S=d;if(!S.ui)S.ui=ui;uidSeq=Math.max(0,...S.jobs.map(j=>j.uid||0))+1;snipSeq=Math.max(0,...S.snips.map(s=>s.uid||0))+1;markDirty();renderAll();toast('Imported');}catch(err){toast('Not a valid tracker backup');}};rd.readAsText(f);e.target.value='';};
 
+// ---- cloud sync (Supabase, optional client-side encryption) ----
+let CLOUD=null;try{CLOUD=JSON.parse(localStorage.getItem('cst_cloud_cfg')||'null');}catch(e){}
+let lastRemoteTs=null,pushTimer=null,applyingRemote=false;
+function cloudConfigured(){return !!(CLOUD&&CLOUD.url&&CLOUD.key);}
+function chead(){return {apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json'};}
+function cloudData(){return {version:1,jobs:S.jobs,vocab:S.vocab,snips:S.snips,legends:S.legends};}
+function cloudSet(cls,txt){const ind=$('cloudInd');if(ind)ind.className='cloud-ind'+(cls?' '+cls:'');const t=$('cloudTxt');if(t)t.textContent=txt;const st=$('cloudState');if(st)st.textContent=cloudConfigured()?('Status: '+txt):'Not connected. Fill in the details below and Connect.';}
+function ab2b64(buf){let s='';const b=new Uint8Array(buf);for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+function b642ab(b64){const s=atob(b64);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer;}
+async function deriveKey(pass,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+async function encryptPayload(obj,pass){const enc=new TextEncoder();const salt=crypto.getRandomValues(new Uint8Array(16));const iv=crypto.getRandomValues(new Uint8Array(12));const key=await deriveKey(pass,salt);const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(obj)));return {enc:1,salt:ab2b64(salt),iv:ab2b64(iv),ct:ab2b64(ct)};}
+async function decryptPayload(p,pass){if(!p||!p.enc)return p;if(!pass)throw new Error('passphrase required');const salt=new Uint8Array(b642ab(p.salt));const iv=new Uint8Array(b642ab(p.iv));const key=await deriveKey(pass,salt);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,b642ab(p.ct));return JSON.parse(new TextDecoder().decode(pt));}
+async function cloudPush(){if(!cloudConfigured())return;cloudSet('syncing','Syncing…');try{let payload=cloudData();if(CLOUD.pass)payload=await encryptPayload(payload,CLOUD.pass);const ts=new Date().toISOString();const r=await fetch(CLOUD.url.replace(/\/$/,'')+'/rest/v1/tracker',{method:'POST',headers:{...chead(),Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:1,data:payload,updated_at:ts})});if(!r.ok)throw new Error('HTTP '+r.status);lastRemoteTs=ts;cloudSet('on','Synced');}catch(e){cloudSet('err','Sync error');}}
+function schedulePush(){if(!cloudConfigured()||applyingRemote)return;clearTimeout(pushTimer);pushTimer=setTimeout(cloudPush,900);}
+async function cloudPull(force){if(!cloudConfigured())return;cloudSet('syncing','Syncing…');try{const r=await fetch(CLOUD.url.replace(/\/$/,'')+'/rest/v1/tracker?id=eq.1&select=data,updated_at',{headers:chead()});if(!r.ok)throw new Error('HTTP '+r.status);const rows=await r.json();if(!rows.length||!rows[0].data){cloudSet('on','Synced (cloud empty)');await cloudPush();return;}const ts=rows[0].updated_at;if(!force&&lastRemoteTs&&ts<=lastRemoteTs){cloudSet('on','Synced');return;}let data=await decryptPayload(rows[0].data,CLOUD.pass);if(data&&data.jobs){applyingRemote=true;S.jobs=data.jobs;S.vocab=data.vocab||S.vocab;S.snips=data.snips||S.snips;if(data.legends)S.legends=data.legends;uidSeq=Math.max(0,...S.jobs.map(j=>j.uid||0))+1;snipSeq=Math.max(0,...S.snips.map(s=>s.uid||0))+1;localStorage.setItem(LSKEY,JSON.stringify(S));renderAll();applyingRemote=false;lastRemoteTs=ts;cloudSet('on','Synced');toast('Pulled latest from cloud');}}catch(e){cloudSet('err',(''+e.message).includes('passphrase')?'Wrong passphrase':'Sync error');applyingRemote=false;}}
+async function cloudPoll(){if(!cloudConfigured()||dirty||applyingRemote)return;try{const r=await fetch(CLOUD.url.replace(/\/$/,'')+'/rest/v1/tracker?id=eq.1&select=updated_at',{headers:chead()});if(!r.ok)return;const rows=await r.json();const ts=rows[0]&&rows[0].updated_at;if(ts&&(!lastRemoteTs||ts>lastRemoteTs))await cloudPull(true);}catch(e){}}
+setInterval(cloudPoll,20000);
+$('cloudInd').onclick=()=>{const c=CLOUD||{};$('cloudUrl').value=c.url||'';$('cloudKey').value=c.key||'';$('cloudPass').value=c.pass||'';cloudSet(cloudConfigured()?'on':'','Cloud '+(cloudConfigured()?'connected':'off'));$('cloudBg').classList.add('show');};
+$('cloudClose').onclick=()=>$('cloudBg').classList.remove('show');
+$('cloudBg').onclick=e=>{if(e.target===$('cloudBg'))$('cloudBg').classList.remove('show');};
+$('cloudConnect').onclick=async()=>{const url=$('cloudUrl').value.trim(),key=$('cloudKey').value.trim(),pass=$('cloudPass').value;if(!url||!key){toast('Enter the Project URL and anon key');return;}CLOUD={url,key,pass};localStorage.setItem('cst_cloud_cfg',JSON.stringify(CLOUD));cloudSet('syncing','Connecting…');await cloudPull(true);$('cloudBg').classList.remove('show');};
+$('cloudPull').onclick=()=>cloudPull(true);
+$('cloudPush').onclick=()=>cloudPush();
+$('cloudOff').onclick=()=>{CLOUD=null;localStorage.removeItem('cst_cloud_cfg');lastRemoteTs=null;cloudSet('','Cloud off');toast('Cloud disconnected (local copy kept)');};
+
 function refreshFoot(){$('foot').innerHTML='<b>'+S.jobs.length+'</b> milestone lines · total pipeline <b>'+money(S.jobs.reduce((a,j)=>a+(j.orderTotal||0),0))+'</b> · '+activeMonths().length+' active months · auto-saved to this browser · offline.';}
 function renderAll(){renderTabs();renderSummary();renderPipe();renderMpills();renderMonth();renderSnips();renderLists();renderLegend('guideLegend');$('abbrLegend3').innerHTML=abbrHTML();refreshFoot();applyWidthsLive();}
 renderAll();activateTab(S.ui.active);save();$('undoBtn').style.opacity=.4;
+if(cloudConfigured()){cloudSet('on','Synced');cloudPull(true);}else{cloudSet('','Cloud off');}
 window.addEventListener('beforeunload',()=>{if(dirty)save();});
 </script></body></html>
